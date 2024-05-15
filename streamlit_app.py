@@ -138,7 +138,10 @@ def main():
             xanchor='left', # Anchor the x
             yanchor='top'
         ),
-        dragmode=False
+        dragmode=False,
+        autosize=True,  # Automatically adjust the plot size
+        width=None,  # Set the width to None to make it responsive
+        height=600
     )
 
     # Create the figure
