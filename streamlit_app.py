@@ -27,8 +27,8 @@ def main():
     st.title("Bomber Turret Aiming Caculator")
 
     # Sliders
-    d = st.slider("Horizontal Distance (m)", min_value=100, max_value=2000, step=100, value=500)
-    initial_fighter_y = st.slider("Initial Fighter Y (m)", min_value=100, max_value=2000, step=50, value=500)
+    d = st.slider("Fighter Frontal Distance (m)", min_value=100, max_value=2000, step=100, value=500)
+    initial_fighter_y = st.slider("Fighter Lateral Distance (m)", min_value=100, max_value=2000, step=50, value=500)
     with st.expander("More Parameters"):
         st.write('''
             You can also adjust the bullet velocity, bomber velocity, and fighter velocity using the sliders below.
@@ -127,9 +127,9 @@ def main():
     # Create the plot layout with larger plot area
     layout = go.Layout(
         title=f'Aiming Angle: {theta_degrees:.2f} degrees',
-        xaxis=dict(title='Horizontal Distance (m)', showgrid=True, range=[-10, d * 1.1],
+        xaxis=dict(title='Fighter Frontal Distance (m)', showgrid=True, range=[-10, d * 1.1],
                    scaleanchor='y'),  # Ensure the x-axis is scaled to the y-axis),
-        yaxis=dict(title='Vertical Distance (m)', showgrid=True, range=[min(impact_fighter_y* 1.2, -100), initial_fighter_y * 1.2]),
+        yaxis=dict(title='Fighter Lateral Distance (m)', showgrid=True, range=[min(impact_fighter_y* 1.2, -100), initial_fighter_y * 1.2]),
         showlegend=True,
         legend=dict(
             orientation="h",  # Horizontal orientation
