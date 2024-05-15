@@ -1,3 +1,4 @@
+import os
 import dash
 from dash import dcc, html
 from dash.dependencies import Input, Output
@@ -153,5 +154,5 @@ def update_plot(v_bullet, v_bomber, v_fighter, d, initial_fighter_y):
     return figure
 
 # Run the app
-if __name__ == '__main__':
-    app.run_server(debug=True)
+if __name__ == "__main__":
+    app.run_server(host='0.0.0.0', port=int(os.environ.get("PORT", 8050)))
