@@ -152,7 +152,7 @@ def main():
     figure.update_layout(layout)
 
     # Display the plot using Streamlit
-    st.plotly_chart(figure)
+    st.plotly_chart(figure, use_container_width=True)
 
 if __name__ == "__main__":
     main()
