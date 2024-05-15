@@ -137,12 +137,11 @@ def update_plot(v_bullet, v_bomber, v_fighter, d, initial_fighter_y):
         yaxis=dict(title='Vertical Distance (m)', showgrid=True, range=[initial_fighter_y * -1.1, initial_fighter_y * 1.1]),
         showlegend=True,
         legend=dict(
-            x=1,  # Position the legend outside the plot on the right
-            y=1,
-            xanchor='left',  # Anchor the legend's x position to the left
-            yanchor='top',   # Anchor the legend's y position to the top
-            bordercolor="Black",
-            borderwidth=1
+            orientation="h",  # Horizontal orientation
+            x=0.5,            # Center horizontally
+            y=-0.2,           # Position below the plot area
+            xanchor='center', # Anchor the x position at the center
+            yanchor='top'
         )
     )
 
