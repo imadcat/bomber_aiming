@@ -22,7 +22,7 @@ app.layout = html.Div([
     dcc.Slider(id='v_fighter', min=50, max=500, step=10, value=150,
                marks={i: str(i) for i in range(50, 501, 50)}),
     html.Label("Horizontal Distance (m)"),
-    dcc.Slider(id='d', min=500, max=1000, step=100, value=1000,
+    dcc.Slider(id='d', min=500, max=2000, step=100, value=500,
                marks={i: str(i) for i in range(500, 5001, 500)}),
     html.Label("Initial Fighter Y (m)"),
     dcc.Slider(id='initial_fighter_y', min=100, max=2000, step=50, value=500,
@@ -30,7 +30,8 @@ app.layout = html.Div([
 ])
 
 @app.callback(
-    Output('trajectory-plot', 'figure'),
+    [Output('trajectory-plot', 'figure'),
+     Output('trajectory-plot', 'style')],
     [Input('v_bullet', 'value'),
      Input('v_bomber', 'value'),
      Input('v_fighter', 'value'),
@@ -132,18 +133,33 @@ def update_plot(v_bullet, v_bomber, v_fighter, d, initial_fighter_y):
             orientation="h",  # Horizontal orientation
             x=0,            # Center horizontally
             y=-0.3,           # Position below the plot area
-            xanchor='center', # Anchor the x position at the center
+            xanchor='left', # Anchor the x position at the center
             yanchor='top'
         )
     )
 
+    # Calculate the new height based on the "d" value
+    max_x = d * 1.1 + 10
+    max_y = initial_fighter_y * 1.2 - min(impact_fighter_y, -100)
+    # Example scaling: adjust the divisor as needed
+    new_width = f"{min(max_x / 10, 100)}vw" 
+    new_height = f"{min(max_y / 10, 100)}vh"
+    # Update the style with the new height
+    new_style = {
+        'width': new_width,
+        'height': new_height
+    }
+
     # Create the figure
     figure = go.Figure(data=[bomber_path, fighter_path, bullet_trajectory, aiming_direction,
-                            initial_bomber_point, impact_bomber_point,
-                            initial_fighter_point, impact_fighter_point], layout=layout)
+                        initial_bomber_point, impact_bomber_point,
+                        initial_fighter_point, impact_fighter_point])
 
-    return figure
+    figure.update_layout(layout,
+                        uirevision=True)
+
+    return figure, new_style
 
 # Run the app
 if __name__ == "__main__":
-    app.run_server(host='0.0.0.0', port=int(os.environ.get("PORT", 8050)), debug=True)
+    app.run_server(host='0.0.0.0', port=int(os.environ.get("PORT", 8050)), debug=False)
