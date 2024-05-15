@@ -6,20 +6,35 @@ from scipy.integrate import solve_ivp
 import scipy.integrate as integrate
 from numpy import interp
 
-def bullet_velocity_function(t, v0=890):
-    # Define the bullet velocity function
-    g = 9.81  # Acceleration due to gravity (m/s^2)
-    rho = 1.225  # Air density (kg/m^3)
-    cd = 0.5  # Drag coefficient
-    r = 0.08  # Radius of the bullet (m)
-    m = 1.0  # Mass of the bullet (kg)
-    A = np.pi * r**2  # Cross-sectional area of the bullet (m^2)
-    k = 0.5 * rho * cd * A  # Drag factor
-    return v0 * np.exp(-k * t / m)
+def bullet_position_function(t, v0 = 890):
+    ## This differential equation can be solved numerically to obtain the velocity as a function of time
+    # Constants  # initial velocity in m/s
+    m = 0.045  # mass in kg
+    Cd = 0.295  # drag coefficient
+    A = 0.000071  # cross-sectional area in m^2
+    rho = 1.225  # air density in kg/m^3
 
-def bullet_position_function(t, v0=890):
-    # Calculate the bullet position as a function of time
-    result, error = integrate.quad(bullet_velocity_function, 0, t, args=(v0,))
+    # Differential equation for velocity reduction
+    def velocity_reduction(t, v):
+        return - (0.5 * rho * v**2 * Cd * A) / m
+
+    # Time span (0 to 10 seconds)
+    t_span = (0, t)
+    # Initial condition
+    v_init = [v0]
+
+    # Solving the differential equation
+    sol = solve_ivp(velocity_reduction, t_span, v_init, t_eval=np.linspace(0, t, 500))
+
+    def bullet_velocity_function(t):
+        # global t_span, sol
+        # if t_span is None or sol is None:
+        #     raise ValueError("Solution values have not been computed yet.")    
+        # Create an interpolation function using the solution values
+        # Evaluate the interpolation function at the given time t
+        return interp(t, np.linspace(0, t, 500), sol.y[0])
+
+    result, error = integrate.quad(bullet_velocity_function, 0, t)
     return result
 
 # Streamlit app
@@ -63,19 +78,19 @@ def main():
         theta_degrees = np.degrees(phi_solution)
 
         # Generate time points for plotting the bullet trajectory
-        t_total = np.linspace(0, t_solution, 100)
-        x_bullet_trajectory = v_bomber * t_total + v_bullet * np.cos(phi_solution) * t_total
-        y_bullet_trajectory = v_bullet * np.sin(phi_solution) * t_total
+        # t_total = np.linspace(0, t_solution, 100)
+        # x_bullet_trajectory = v_bomber * t_total + v_bullet * np.cos(phi_solution) * t_total
+        # y_bullet_trajectory = v_bullet * np.sin(phi_solution) * t_total
 
         # Calculate the aiming direction line based on phi_solution
         aiming_line_length = d * 2  # Extend the aiming line for better visualization
         aiming_line_x = [0, aiming_line_length * np.cos(phi_solution) * 10]
         aiming_line_y = [0, aiming_line_length * np.sin(phi_solution) * 10]
 
-        return t_solution, phi_solution, x_bullet_trajectory, y_bullet_trajectory, theta_degrees, aiming_line_x, aiming_line_y
+        return t_solution, phi_solution, theta_degrees, aiming_line_x, aiming_line_y
 
     # Get the plot data and aiming angle
-    t_solution, phi_solution, x_bullet_trajectory, y_bullet_trajectory, theta_degrees, aiming_line_x, aiming_line_y = calculate_trajectory(
+    t_solution, phi_solution, theta_degrees, aiming_line_x, aiming_line_y = calculate_trajectory(
         v_bullet, v_bomber, v_fighter, d, initial_fighter_y
     )
 
@@ -85,7 +100,7 @@ def main():
     fighter_path = go.Scatter(x=[d, d], y=[initial_fighter_y, initial_fighter_y - v_fighter * t_solution], mode='lines', name='Fighter Path', line=dict(color='green', width=3))
 
     bullet_trajectory = go.Scatter(
-        x=x_bullet_trajectory, y=y_bullet_trajectory, mode='lines', name='Bullet Trajectory', line=dict(color='red')
+        x=[0, d], y=[0, initial_fighter_y - v_fighter * t_solution], mode='lines', name='Bullet Trajectory', line=dict(color='red')
     )
 
     aiming_direction = go.Scatter(

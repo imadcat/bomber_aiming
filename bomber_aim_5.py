@@ -99,19 +99,19 @@ def update_plot(d, initial_fighter_y, v_bullet, v_bomber, v_fighter):
         theta_degrees = np.degrees(phi_solution)
 
         # Generate time points for plotting the bullet trajectory
-        t_total = np.linspace(0, t_solution, 100)
-        x_bullet_trajectory = v_bomber * t_total + v_bullet * np.cos(phi_solution) * t_total
-        y_bullet_trajectory = v_bullet * np.sin(phi_solution) * t_total
+        # t_total = np.linspace(0, t_solution, 100)
+        # x_bullet_trajectory = bullet_position_function(t_total, v0_bullet_norm)
+        # y_bullet_trajectory = v_bullet * np.sin(phi_solution) * t_total
 
         # Calculate the aiming direction line based on phi_solution
         aiming_line_length = d * 1.5  # Extend the aiming line for better visualization
         aiming_line_x = [0, aiming_line_length * np.cos(phi_solution) * 10]
         aiming_line_y = [0, aiming_line_length * np.sin(phi_solution) * 10]
 
-        return t_solution, phi_solution, x_bullet_trajectory, y_bullet_trajectory, theta_degrees, aiming_line_x, aiming_line_y
+        return t_solution, phi_solution, theta_degrees, aiming_line_x, aiming_line_y
 
     # Get the plot data and aiming angle
-    t_solution, phi_solution, x_bullet_trajectory, y_bullet_trajectory, theta_degrees, aiming_line_x, aiming_line_y = calculate_trajectory(
+    t_solution, phi_solution, theta_degrees, aiming_line_x, aiming_line_y = calculate_trajectory(
         v_bullet, v_bomber, v_fighter, d, initial_fighter_y
     )
 
@@ -121,7 +121,7 @@ def update_plot(d, initial_fighter_y, v_bullet, v_bomber, v_fighter):
     fighter_path = go.Scatter(x=[d, d], y=[initial_fighter_y, initial_fighter_y - v_fighter * t_solution], mode='lines', name='Fighter Path', line=dict(color='green', width=3))
 
     bullet_trajectory = go.Scatter(
-        x=x_bullet_trajectory, y=y_bullet_trajectory, mode='lines', name='Bullet Trajectory', line=dict(color='red')
+        x=[0, d], y=[0, initial_fighter_y - v_fighter * t_solution], mode='lines', name='Bullet Trajectory', line=dict(color='red')
     )
 
     aiming_direction = go.Scatter(
