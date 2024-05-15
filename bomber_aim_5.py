@@ -175,7 +175,8 @@ def update_plot(d, initial_fighter_y, v_bullet, v_bomber, v_fighter):
             y=-0.3,           # Position below the plot area
             xanchor='left', # Anchor the x position at the center
             yanchor='top'
-        )
+        ),
+        dragmode=False
     )
 
     # Calculate the new height based on the "d" value
