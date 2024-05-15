@@ -136,7 +136,8 @@ def main():
             x=0,            # Center horizontally
             y=-0.3,           # Position below the plot area
             xanchor='left', # Anchor the x
-            yanchor='top'
+            yanchor='top',
+            ncol=2
         ),
         dragmode=False,
         autosize=True,  # Automatically adjust the plot size
