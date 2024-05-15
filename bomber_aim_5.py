@@ -10,10 +10,10 @@ app = dash.Dash(__name__)
 
 # App layout
 app.layout = html.Div([
-    html.H1("Aiming Angle Calculation for Bomber and Fighter"),
+    html.H1("Aiming Angle Calculation for Bomber Turret Gunner to Hit the Fighter"),
     dcc.Graph(id='trajectory-plot'),
     html.Label("Bullet Velocity (m/s)"),
-    dcc.Slider(id='v_bullet', min=500, max=1500, step=10, value=890,
+    dcc.Slider(id='v_bullet', min=500, max=1000, step=10, value=890,
                marks={i: str(i) for i in range(500, 1501, 100)}),
     html.Label("Bomber Velocity (m/s)"),
     dcc.Slider(id='v_bomber', min=50, max=300, step=10, value=100,
@@ -22,7 +22,7 @@ app.layout = html.Div([
     dcc.Slider(id='v_fighter', min=50, max=500, step=10, value=150,
                marks={i: str(i) for i in range(50, 501, 50)}),
     html.Label("Horizontal Distance (m)"),
-    dcc.Slider(id='d', min=500, max=5000, step=100, value=1000,
+    dcc.Slider(id='d', min=500, max=1000, step=100, value=1000,
                marks={i: str(i) for i in range(500, 5001, 500)}),
     html.Label("Initial Fighter Y (m)"),
     dcc.Slider(id='initial_fighter_y', min=100, max=2000, step=50, value=500,
@@ -93,17 +93,6 @@ def update_plot(v_bullet, v_bomber, v_fighter, d, initial_fighter_y):
     # Unicode airplane symbols
     airplane_symbols = ['✈️', '🛩️', '🛫', '🛬', '✈️']
 
-    # # Scatter plot with airplane symbols as text
-    # scatter_airplanes = go.Scatter(
-    #     x=x, y=y,
-    #     mode='markers+text',
-    #     marker=dict(size=10),
-    #     text=airplane_symbols,
-    #     textfont=dict(size=20),  # Adjust the font size of the airplane symbols
-    #     textposition='top center',  # Position the text above the markers
-    #     name='Airplane Symbols'
-    # )
-
     initial_bomber_point = go.Scatter(
         x=[0], y=[0],
         mode='markers+text', name='✈️Initial Bomber Position', 
@@ -124,8 +113,9 @@ def update_plot(v_bullet, v_bomber, v_fighter, d, initial_fighter_y):
         marker=dict(color='green', size=10, symbol='square')
     )
 
+    impact_fighter_y = initial_fighter_y - v_fighter * t_solution
     impact_fighter_point = go.Scatter(
-        x=[d], y=[initial_fighter_y - v_fighter * t_solution],
+        x=[d], y=[impact_fighter_y],
         mode='markers', name='Impact Fighter Position',
         marker=dict(color='green', size=10, symbol='x')
     )
@@ -133,13 +123,15 @@ def update_plot(v_bullet, v_bomber, v_fighter, d, initial_fighter_y):
     # Create the plot layout with larger plot area
     layout = go.Layout(
         title=f'Aiming Angle: {theta_degrees:.2f} degrees',
-        xaxis=dict(title='Horizontal Distance (m)', showgrid=True, range=[-100, d * 1.1]),
-        yaxis=dict(title='Vertical Distance (m)', showgrid=True, range=[initial_fighter_y * -1.1, initial_fighter_y * 1.1]),
+        xaxis=dict(title='Horizontal Distance (m)', showgrid=True, range=[-10, d * 1.1],
+                   scaleanchor='y'),  # Ensure the x-axis is scaled to the y-axis),
+        yaxis=dict(title='Vertical Distance (m)', showgrid=True, range=[min(impact_fighter_y, -100), initial_fighter_y * 1.2],
+                   scaleratio=1),      # Same ratio for the y-axis to maintain equal scaling),
         showlegend=True,
         legend=dict(
             orientation="h",  # Horizontal orientation
-            x=0.5,            # Center horizontally
-            y=-0.2,           # Position below the plot area
+            x=0,            # Center horizontally
+            y=-0.3,           # Position below the plot area
             xanchor='center', # Anchor the x position at the center
             yanchor='top'
         )
@@ -154,4 +146,4 @@ def update_plot(v_bullet, v_bomber, v_fighter, d, initial_fighter_y):
 
 # Run the app
 if __name__ == "__main__":
-    app.run_server(host='0.0.0.0', port=int(os.environ.get("PORT", 8050)))
+    app.run_server(host='0.0.0.0', port=int(os.environ.get("PORT", 8050)), debug=True)
