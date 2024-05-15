@@ -134,7 +134,7 @@ def main():
         legend=dict(
             orientation="h",  # Horizontal orientation
             x=0,            # Center horizontally
-            y=-0.3,           # Position below the plot area
+            y=-0.4,           # Position below the plot area
             xanchor='left', # Anchor the x
             yanchor='top',
             itemwidth=100,  # Adjust the width of legend items to make them narrower
