@@ -137,7 +137,8 @@ def main():
             y=-0.3,           # Position below the plot area
             xanchor='left', # Anchor the x
             yanchor='top',
-            ncol=2
+            itemwidth=100,  # Adjust the width of legend items to make them narrower
+            tracegroupgap=10  # Add some vertical space between legend groups
         ),
         dragmode=False,
         autosize=True,  # Automatically adjust the plot size
