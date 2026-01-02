@@ -3,13 +3,12 @@ import math
 import random
 import sys
 
-# Physics Constants (from original project)
-# Although solve_ivp is too slow for real-time game loop, we can use Euler integration with these constants
-# to maintain the "simulation" aspect.
+# Physics Constants
 M_BULLET = 0.045  # kg
 CD = 0.295
 A = 0.000071  # m^2
 RHO = 1.225  # kg/m^3
+V_BOMBER = 100.0 # m/s (Bomber moving right/forward)
 
 # Game Constants
 WIDTH, HEIGHT = 800, 600
@@ -19,37 +18,55 @@ BLACK = (0, 0, 0)
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 BLUE = (0, 0, 255)
+GREY = (100, 100, 100)
 
 class Bullet:
     def __init__(self, x, y, angle, speed):
+        # x, y are screen positions (relative to bomber)
         self.x = x
         self.y = y
-        self.vx = speed * math.cos(angle)
-        self.vy = speed * math.sin(angle)
+
+        # Initial velocity relative to bomber
+        vx_rel = speed * math.cos(angle)
+        vy_rel = speed * math.sin(angle)
+
+        # Initial velocity relative to ground (Air is stationary relative to ground)
+        # Bomber is moving +X direction
+        self.vx_ground = vx_rel + V_BOMBER
+        self.vy_ground = vy_rel
+
         self.active = True
 
     def update(self, dt):
-        # Calculate velocity magnitude
-        v = math.sqrt(self.vx**2 + self.vy**2)
+        # Calculate ground velocity magnitude
+        v_ground = math.sqrt(self.vx_ground**2 + self.vy_ground**2)
 
-        # Drag force: Fd = 0.5 * rho * v^2 * Cd * A
-        drag_force = 0.5 * RHO * (v**2) * CD * A
+        # Drag force acts opposite to ground velocity
+        # Fd = 0.5 * rho * v^2 * Cd * A
+        drag_force = 0.5 * RHO * (v_ground**2) * CD * A
 
-        # Deceleration: a = Fd / m
+        # Deceleration components relative to ground
         decel = drag_force / M_BULLET
 
-        # Update velocity components
-        if v > 0:
-            self.vx -= (self.vx / v) * decel * dt
-            self.vy -= (self.vy / v) * decel * dt
+        if v_ground > 0:
+            ax = -(self.vx_ground / v_ground) * decel
+            ay = -(self.vy_ground / v_ground) * decel
 
-        # Update position
-        self.x += self.vx * dt
-        self.y += self.vy * dt
+            # Update ground velocity
+            self.vx_ground += ax * dt
+            self.vy_ground += ay * dt
 
-        # Deactivate if out of bounds or too slow
-        if (self.x < 0 or self.x > WIDTH or
-            self.y < 0 or self.y > HEIGHT or v < 10):
+        # Update screen position (relative to bomber)
+        # Change in relative position = (V_ground - V_bomber) * dt
+        vx_rel = self.vx_ground - V_BOMBER
+        vy_rel = self.vy_ground # vy_ground - 0
+
+        self.x += vx_rel * dt
+        self.y += vy_rel * dt
+
+        # Deactivate if out of bounds
+        if (self.x < -100 or self.x > WIDTH + 100 or
+            self.y < -100 or self.y > HEIGHT + 100):
             self.active = False
 
     def draw(self, screen):
@@ -57,9 +74,17 @@ class Bullet:
 
 class Enemy:
     def __init__(self, speed_mult=1.0):
-        self.x = WIDTH
+        self.x = WIDTH + 50
         self.y = random.randint(50, HEIGHT - 50)
-        self.vx = -random.randint(100, 300) * speed_mult
+        # Enemy moves left relative to ground? Or aiming to intercept?
+        # If enemy is chasing, it might be faster than bomber.
+        # If enemy is head-on, relative speed is high.
+        # Let's assume head-on interception or stationary ground target appearing.
+        # In this game, enemies appear from right and move left.
+        # Relative velocity = V_enemy_ground - V_bomber_ground
+        # If V_enemy_ground is negative (flying towards bomber), relative is very negative.
+        # Let's just define effective screen velocity.
+        self.vx = -random.randint(200, 400) * speed_mult
         self.radius = 15
         self.active = True
 
@@ -72,6 +97,7 @@ class Enemy:
 
     def draw(self, screen):
         # Draw a simple fighter shape
+        # Rotate 180 deg since moving left
         pygame.draw.polygon(screen, GREEN, [
             (self.x, self.y),
             (self.x + 20, self.y - 10),
@@ -82,7 +108,7 @@ class Game:
     def __init__(self, test_mode=False):
         pygame.init()
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
-        pygame.display.set_caption("Bomber Defense")
+        pygame.display.set_caption("Bomber Defense - Moving Platform Physics")
         self.clock = pygame.time.Clock()
         self.running = True
         self.test_mode = test_mode
@@ -99,7 +125,11 @@ class Game:
         self.turret_angle = 0
 
         self.spawn_timer = 0
-        self.spawn_rate = 1.0 # seconds
+
+        # Background stars for speed effect
+        self.stars = []
+        for _ in range(50):
+            self.stars.append([random.randint(0, WIDTH), random.randint(0, HEIGHT), random.randint(1, 3)])
 
     def reset(self):
         self.bullets = []
@@ -123,6 +153,14 @@ class Game:
                 if self.frames > 60:
                     self.running = False
 
+                # Verification print during test
+                if self.test_mode and self.frames % 10 == 0:
+                    if self.bullets:
+                        b = self.bullets[0]
+                        # Verify bullet is curving back (vx_rel decreasing)
+                        vx_rel = b.vx_ground - V_BOMBER
+                        print(f"Frame {self.frames}: Bullet Vx_rel={vx_rel:.2f}, X={b.x:.2f}")
+
         pygame.quit()
 
     def handle_events(self):
@@ -138,7 +176,7 @@ class Game:
 
     def shoot(self):
         # Bullet initial speed
-        speed = 890 # m/s from original code
+        speed = 890 # m/s
         bullet = Bullet(self.turret_x, self.turret_y, self.turret_angle, speed)
         self.bullets.append(bullet)
 
@@ -149,11 +187,18 @@ class Game:
         dy = my - self.turret_y
         self.turret_angle = math.atan2(dy, dx)
 
+        # Update Background Stars (move left to simulate forward bomber motion)
+        for star in self.stars:
+            star[0] -= V_BOMBER * 5 * dt * star[2] * 0.1 # Parallax
+            if star[0] < 0:
+                star[0] = WIDTH
+                star[1] = random.randint(0, HEIGHT)
+
         # Spawn Enemies
         self.spawn_timer -= dt
         if self.spawn_timer <= 0:
-            self.enemies.append(Enemy(speed_mult=1.0 + self.score * 0.01))
-            self.spawn_timer = max(0.2, 1.0 - self.score * 0.05)
+            self.enemies.append(Enemy(speed_mult=1.0 + self.score * 0.02))
+            self.spawn_timer = max(0.3, 1.2 - self.score * 0.05)
 
         # Update Bullets
         for b in self.bullets:
@@ -172,7 +217,6 @@ class Game:
             e_rect = pygame.Rect(e.x, e.y - 10, 20, 20)
             for b in self.bullets:
                 if b.active:
-                    # Simple point collision
                     if e_rect.collidepoint(b.x, b.y):
                         e.active = False
                         b.active = False
@@ -181,6 +225,10 @@ class Game:
 
     def draw(self):
         self.screen.fill(BLACK)
+
+        # Draw Stars
+        for star in self.stars:
+            pygame.draw.circle(self.screen, GREY, (int(star[0]), int(star[1])), star[2])
 
         if self.game_over:
             font = pygame.font.SysFont(None, 64)
@@ -195,12 +243,12 @@ class Game:
             self.screen.blit(restart_text, (WIDTH//2 - restart_text.get_width()//2, HEIGHT//2 + 60))
 
         else:
-            # Draw Turret
-            pygame.draw.circle(self.screen, BLUE, (self.turret_x, self.turret_y), 20)
+            # Draw Turret Base
+            pygame.draw.circle(self.screen, BLUE, (self.turret_x, self.turret_y), 25)
             # Turret Barrel
-            end_x = self.turret_x + 40 * math.cos(self.turret_angle)
-            end_y = self.turret_y + 40 * math.sin(self.turret_angle)
-            pygame.draw.line(self.screen, BLUE, (self.turret_x, self.turret_y), (end_x, end_y), 5)
+            end_x = self.turret_x + 50 * math.cos(self.turret_angle)
+            end_y = self.turret_y + 50 * math.sin(self.turret_angle)
+            pygame.draw.line(self.screen, BLUE, (self.turret_x, self.turret_y), (end_x, end_y), 8)
 
             # Draw Bullets
             for b in self.bullets:
@@ -220,4 +268,7 @@ class Game:
 if __name__ == "__main__":
     test_mode = "--test" in sys.argv
     game = Game(test_mode=test_mode)
+    if test_mode:
+        # Manually fire a bullet for testing physics
+        game.shoot()
     game.run()
