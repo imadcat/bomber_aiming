@@ -2,3 +2,4 @@ dash
 numpy
 scipy
 plotly
+pygame
